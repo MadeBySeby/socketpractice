@@ -27,7 +27,7 @@ export default function App() {
     if (!socket) return;
     const fetchData = async () => {
       try {
-        const resp = await fetch("https://mw.artwear.ge/user");
+        const resp = await fetch("/api/user");
         const data = await resp.json();
 
         setUsers(data);
@@ -90,7 +90,7 @@ export default function App() {
 
     const fetchBalance = async () => {
       try {
-        const resp = await fetch("https://mw.artwear.ge/user/balance");
+        const resp = await fetch("/api/user/balance");
         const balances = await resp.json();
         const userBalance = balances.find((b) => b.userId === currentUser);
         console.log(userBalance);
