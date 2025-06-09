@@ -90,7 +90,9 @@ export default function App() {
 
     const fetchBalance = async () => {
       try {
-        const resp = await fetch("/api/user/balance");
+        const API_BASE = import.meta.env.PROD ? "https://mw.artwear.ge" : "";
+
+        const resp = await fetch(`${API_BASE}/api/user`);
         const balances = await resp.json();
         const userBalance = balances.find((b) => b.userId === currentUser);
         console.log(userBalance);
