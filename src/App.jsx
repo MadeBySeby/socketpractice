@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { socket } from "./socket";
-import { use } from "react";
 
 export default function App() {
   const [isConnected, setIsConnected] = useState(socket.connected);
@@ -12,8 +11,8 @@ export default function App() {
   const [countdown, setCountDown] = useState();
   const [roundEnd, setRoundEnd] = useState(false);
   const [betPlaced, setBetPlaced] = useState([]);
-
   useEffect(() => {
+    if (!socket) return;
     socket.on("connect", () => {
       console.log("✅ Connected:", socket.id);
       setIsConnected(true);
@@ -71,7 +70,8 @@ export default function App() {
         {countdown ? (
           <h1>round starts in {countdown}</h1>
         ) : (
-          <h1 style={{ color: roundEnd ? "red" : "black" }}>
+          // <h1 style={{ color: roundEnd ? "red" : "black" }}>
+          <h1>
             {multiplier}
             {multiplier ? "x" : ""}
           </h1>
