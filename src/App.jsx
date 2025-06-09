@@ -12,7 +12,7 @@ export default function App() {
   const [gameEvents, setGameEvents] = useState([]);
   const [round, setRound] = useState(gameEvents?.map((e) => e.round_id));
   const [multiplier, setMultipier] = useState();
-  const [countdown, setCountDown] = useState();
+  const [countdown, setCountDown] = useState(true);
   // const [roundEnd, setRoundEnd] = useState();
   const [betPlaced, setBetPlaced] = useState([]);
   const params = useParams();
@@ -141,7 +141,9 @@ export default function App() {
           onChange={(e) => setInputMessage(e.target.value)}
           type="number"
         />
-        <button onClick={placeBet}>bet</button>
+        <button disabled={!countdown} onClick={placeBet}>
+          bet
+        </button>
         <select
           value={currentUser || ""}
           onChange={(e) => setCurrentUser(e.target.value)}>

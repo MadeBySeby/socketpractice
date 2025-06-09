@@ -49,3 +49,7 @@ h1 {
 .bet_cont input {
   padding: 1rem;
 }
+button:disabled {
+  background-color: gray;
+  cursor: not-allowed;
+}
