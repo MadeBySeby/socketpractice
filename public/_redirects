@@ -1,0 +1,5 @@
+# API proxy for production
+/api/* https://mw.artwear.ge/:splat 200
+
+# SPA fallback
+/* /index.html 200

@@ -27,7 +27,7 @@ export default function App() {
     if (!socket) return;
     const fetchData = async () => {
       try {
-        const resp = await fetch("/api/user");
+        const resp = await fetch("https://mw.artwear.ge/user");
         const data = await resp.json();
 
         setUsers(data);
@@ -80,7 +80,7 @@ export default function App() {
       user_id: currentUser,
       round_id: round,
       position: 0,
-      amount: Number(inputMessage),
+      amount: amount,
     };
     console.log("Bet data:", betData);
     socket.emit("BET", betData);
@@ -90,9 +90,7 @@ export default function App() {
 
     const fetchBalance = async () => {
       try {
-        const API_BASE = import.meta.env.PROD ? "https://mw.artwear.ge" : "";
-
-        const resp = await fetch(`${API_BASE}/api/user`);
+        const resp = await fetch("https://mw.artwear.ge/user/balance");
         const balances = await resp.json();
         const userBalance = balances.find((b) => b.userId === currentUser);
         console.log(userBalance);
@@ -155,12 +153,13 @@ export default function App() {
             );
           })}
         </select>
-        {currentUserBalance ? `your balance ${currentUserBalance}` : ""}
+        {/* {currentUserBalance ? `your balance ${currentUserBalance}` : ""} */}
       </div>
       {console.log(betPlaced)}
       {betPlaced && (
         <div className="bet_placed">
-          {`current user : ${userToDisplay} | balance: ${userBalance}`}
+          {userToDisplay &&
+            `current user : ${userToDisplay} | balance: ${userBalance}`}
 
           {betPlaced.map((bet, i) => (
             <ul key={i}>
