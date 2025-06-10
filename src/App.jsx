@@ -3,6 +3,7 @@ import { socket } from "./socket";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
+import PixiGame from "./components/pixi.js";
 export default function App() {
   // const [socket, setSocket] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -16,6 +17,8 @@ export default function App() {
   const [countdown, setCountDown] = useState(true);
   const [isBetPlaced, setIsBetPlaced] = useState(false);
   const [cashoutPlaced, setCashoutPlaced] = useState([]);
+  const [roundEnd, setRoundEnd] = useState(false);
+  const [multiplierCount, setMultiplierCount] = useState(0);
   // const [roundEnd, setRoundEnd] = useState();
   const [betPlaced, setBetPlaced] = useState([]);
   const params = useParams();
@@ -59,8 +62,9 @@ export default function App() {
       setRound(parsedData.round_id);
       setMultipier(parsedData.multiplier);
       setCountDown(parsedData.second);
-
+      setMultiplierCount(parsedData.multiplier);
       if (parsedData.type === "ROUND_END") {
+        setRoundEnd(true);
         setIsBetPlaced(false);
       }
     };
@@ -185,6 +189,9 @@ export default function App() {
           {/* <br /> */}
           {/* Multiplier : {multiplier} */}
           {/* </ul> */}
+          <div id="pixi-container" style={{ width: "100", height: "100" }}>
+            <PixiGame roundEnd={roundEnd} multiplier={multiplier} />
+          </div>
           {countdown ? (
             <h1>round starts in {countdown}</h1>
           ) : (
@@ -194,60 +201,64 @@ export default function App() {
               {multiplier ? "x" : ""}
             </h1>
           )}
-        </div>
-        <div className="bet_cont">
-          <input onChange={(e) => setBetAmount(e.target.value)} type="number" />
-          <button
-            disabled={isBetPlaced || !countdown ? true : false}
-            onClick={handleBetPlaced}>
-            {isBetPlaced ? "cancel" : "Place Bet"}
-            {/* cancel ჯერ არ დამიმატებია */}
-          </button>
-          {/* {currentUserBalance ? `your balance ${currentUserBalance}` : ""} */}
-        </div>
-        <select
-          value={currentUser || ""}
-          onChange={(e) => setCurrentUser(e.target.value)}>
-          {users.map((user) => {
-            return (
-              <option key={user.id} value={user.id}>
-                user:{user.id}
-              </option>
-            );
-          })}
-        </select>
-        {betPlaced.length > 0 && (
-          <div className="bet_placed">
-            <h2>Bet History</h2>
-            {betPlaced.map((bet, i) => (
-              <ul key={i}>
-                <li>
-                  User: {bet.user_id} | Amount: {bet.amount} | Position:{" "}
-                  {bet.position}
-                </li>
-              </ul>
-            ))}
+          <div className="bet_cont">
+            <input
+              onChange={(e) => setBetAmount(e.target.value)}
+              type="number"
+            />
+            <button
+              disabled={isBetPlaced || !countdown ? true : false}
+              onClick={handleBetPlaced}>
+              {isBetPlaced ? "cancel" : "Place Bet"}
+              {/* cancel ჯერ არ დამიმატებია */}
+            </button>
+            {/* {currentUserBalance ? `your balance ${currentUserBalance}` : ""} */}
           </div>
-        )}
-        {userToDisplay && (
-          <div>
-            current user : {userToDisplay} | balance: {userBalance}
-            <button onClick={cashout}>Cash out</button>
-            {cashoutPlaced.length > 0 && (
-              <div>
-                <h2>Cashout History:</h2>
-                {cashoutPlaced.map((cashout, i) => (
-                  <ul key={i}>
-                    <li>
-                      User: {cashout.user_id} | Amount: {cashout.amount} |
-                      Position: {cashout.position}
-                    </li>
-                  </ul>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+          <select
+            value={currentUser || ""}
+            onChange={(e) => setCurrentUser(e.target.value)}>
+            {users.map((user) => {
+              return (
+                <option key={user.id} value={user.id}>
+                  user:{user.id}
+                </option>
+              );
+            })}
+          </select>
+          {betPlaced.length > 0 && (
+            <div className="bet_placed">
+              <h2>Bet History</h2>
+              {console.log("betPlaced:", betPlaced)}
+              {betPlaced.map((bet, i) => (
+                <ul key={i}>
+                  <li>
+                    User: {bet.user_id} | Amount: {bet.amount} | Position:{" "}
+                    {bet.position} || Bet Id: {bet.bet_id}
+                  </li>
+                </ul>
+              ))}
+            </div>
+          )}
+          {userToDisplay && (
+            <div className="user_info">
+              current user : {userToDisplay} | balance: {userBalance}
+              <button onClick={cashout}>Cash out</button>
+              {cashoutPlaced.length > 0 && (
+                <div className="cashout_history">
+                  <h2>Cashout History:</h2>
+                  {cashoutPlaced.map((cashout, i) => (
+                    <ul key={i}>
+                      <li>
+                        User: {cashout.user_id} | Amount: {cashout.amount} |
+                        Position: {cashout.position}
+                      </li>
+                    </ul>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
