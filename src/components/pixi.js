@@ -3,7 +3,7 @@ import { useRef, useEffect } from "react";
 
 export default function PixiGame(data) {
   const appRef = useRef(null);
-  const birdRef = useRef(null);
+  const airplaneRef = useRef(null);
   const tickerFnRef = useRef(null);
   const isInitializedRef = useRef(false);
   const multiplierTextRef = useRef(null);
@@ -17,7 +17,7 @@ export default function PixiGame(data) {
       try {
         const app = new Application();
         await app.init({
-          width: window.innerWidth / 2,
+          width: window.innerWidth / 1.25,
           height: window.innerHeight / 2,
           backgroundColor: 0x000000,
           transparent: true,
@@ -29,7 +29,13 @@ export default function PixiGame(data) {
         }
         const backgroundTexture = await Assets.load("/backgroundimg.png");
         const background = new Sprite(backgroundTexture);
-
+        const airplaneTexture = await Assets.load("/airplane.png");
+        const airplane = new Sprite(airplaneTexture);
+        airplaneRef.current = airplane;
+        app.stage.addChild(airplane);
+        airplane.anchor.set(0.5);
+        airplane.x = 0;
+        airplane.y = app.screen.height - airplane.height / 2;
         const multiplierText = new Text({
           text: data?.multiplier?.toString() || "0",
           style: {
@@ -42,9 +48,19 @@ export default function PixiGame(data) {
         multiplierText.anchor.set(0.5);
         app.stage.addChild(multiplierText);
         multiplierTextRef.current = multiplierText;
+        background.anchor.set(0.5);
         background.width = app.screen.width;
         background.height = app.screen.height;
-        app.stage.addChild(background);
+        app.stage.addChildAt(background, 0);
+        if (app.screen.width > app.screen.height) {
+          background.width = app.screen.width * 1.2;
+          background.scale.y = background.scale.x;
+        } else {
+          background.height = app.screen.height * 1.2;
+          background.scale.x = background.scale.y;
+        }
+        background.x = app.screen.width / 2;
+        background.y = app.screen.height / 2;
         // const texture = await Assets.load("/bird.png");
         // const bird = new Sprite(texture);
         // bird.anchor.set(0.5);
@@ -89,35 +105,43 @@ export default function PixiGame(data) {
   }, []);
 
   useEffect(() => {
-    if (!appRef.current || !birdRef.current || !multiplierTextRef.current)
-      return;
+    if (!appRef.current || !multiplierTextRef.current) return;
 
     const app = appRef.current;
-    const bird = birdRef.current;
     const multiplierText = multiplierTextRef.current;
-    console.log(data);
+    const airplane = airplaneRef.current;
+    console.log("Updating text with data:", data);
     multiplierText.text = data?.multiplier?.toString() || "0";
-    const tickerFn = (delta) => {
-      if (data?.multiplier) {
-        // Update bird position based on multiplier
-        bird.y += 0.1 * data.multiplier;
-        // You can also add more complex animations or behaviors here
-      }
-    };
-    app.ticker.add(tickerFn);
-    tickerFnRef.current = tickerFn;
 
-    // Remove ticker if multiplier is undefined
-    if (data?.multiplier === undefined) {
-      app.ticker.remove(tickerFn);
+    if (tickerFnRef.current) {
+      app.ticker.remove(tickerFnRef.current);
       tickerFnRef.current = null;
     }
+
+    if (airplaneRef.current && data?.multiplier !== undefined) {
+      const tickerFn = (delta) => {
+        airplane.x += 0.4 * data.multiplier * delta.deltaTime;
+        airplane.y -= 0.4 * data.multiplier * delta.deltaTime;
+
+        if (airplane.y > app.screen.height + airplane.height) {
+          airplane.y = -airplane.height;
+        }
+      };
+
+      app.ticker.add(tickerFn);
+      tickerFnRef.current = tickerFn;
+      if (data?.roundEnd === true) {
+        app.ticker.remove(tickerFn);
+        tickerFnRef.current = null;
+      }
+    }
+
     return () => {
       if (appRef.current && tickerFnRef.current) {
         appRef.current.ticker.remove(tickerFnRef.current);
+        tickerFnRef.current = null;
       }
     };
-  }, [data]);
-
+  }, [data?.multiplier]);
   return null;
 }
