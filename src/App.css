@@ -10,9 +10,12 @@
   display: flex;
   justify-content: center;
   align-content: center;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
 }
 body {
-  background-color: wheat;
+  background-color: rgb(22, 22, 22);
 }
 .main {
   display: flex;
@@ -23,39 +26,118 @@ body {
   width: 100%;
   height: 100vh;
   padding: 1rem;
-  background-color: wheat;
 }
+.multipliers ul {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  max-width: 1200px;
+  border: 1px solid #444;
+  border-radius: 10px;
+  background-color: #111;
+  color: white;
+  list-style: none;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
 .game {
   display: flex;
+  width: 100%;
+  height: auto;
+  /* background-color: red; */
   justify-content: center;
   flex-direction: column;
   gap: 2rem;
   align-items: center;
 }
-button {
-  padding: 10px 20px;
-  background-color: red;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
+
 h1 {
   font-size: 3rem;
 }
 .bet_cont {
-  gap: 10px;
+  /* width: 500px; */
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: stretch;
+  gap: 1rem;
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 600px;
+  background-color: #1b1c1d;
+  padding: 1rem;
+}
+.input_stack {
   display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.bet_cont input {
+  border: 2px solid white;
+  border-radius: 8px;
+  background-color: #fffde7;
+  color: #333;
+  font-size: 1.1rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  outline: none;
+}
+
+.bet_cont input:focus {
+  border-color: white;
+  box-shadow: 0 0 0 2px white;
+}
+.bet_button {
+  height: 100%;
+  padding: 1rem;
+  background-color: green;
+  border: 1px solid white;
+  border-radius: 1rem;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bet_button_container button {
+}
+.bet_button:hover {
+  opacity: 0.7;
+}
+.quick-bet-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  background-color: #141516;
+  border: none;
+  border-radius: 1rem;
+  color: gray;
+}
+.quick-bet-buttons button {
+  padding: 0.5rem;
+  background-color: #333;
+  color: gray;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.quick-bet-buttons button:hover {
+  background-color: #444;
+  color: white;
 }
 .bet_cont input {
   padding: 1rem;
 }
+
 button:disabled {
   background-color: gray;
   cursor: not-allowed;
 }
+
 select {
   padding: 10px 20px;
   border-radius: 5px;
@@ -139,7 +221,8 @@ select:focus {
   align-items: center;
   gap: 1.2rem;
 }
-
+#pixi-container {
+}
 @media (max-width: 600px) {
   .cashout_history ul {
     max-width: 100%;

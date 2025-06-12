@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { socket } from "./socket";
 import { useParams } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import PixiGame from "./components/pixi.js";
 export default function App() {
@@ -9,6 +8,7 @@ export default function App() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isConnected, setIsConnected] = useState(socket.connected);
   const [betAmount, setBetAmount] = useState();
+  const [amountToBet, setAmountToBet] = useState();
   const [currentBet, setCurrentBet] = useState();
   const [gameEvents, setGameEvents] = useState([]);
   const [round, setRound] = useState(gameEvents?.map((e) => e.round_id));
@@ -17,6 +17,8 @@ export default function App() {
   const [countdown, setCountDown] = useState(true);
   const [isBetPlaced, setIsBetPlaced] = useState(false);
   const [cashoutPlaced, setCashoutPlaced] = useState([]);
+  const [betCaneled, setBetCaneled] = useState(false);
+  const [betCaneledInfo, setBetCaneledInfo] = useState(null);
   const [roundEnd, setRoundEnd] = useState(false);
   const [multiplierCount, setMultiplierCount] = useState(0);
   // const [roundEnd, setRoundEnd] = useState();
@@ -65,15 +67,26 @@ export default function App() {
       setMultiplierCount(parsedData.multiplier);
       if (parsedData.type === "ROUND_END") {
         setRoundEnd(true);
+        setRoundStarted(false);
         setIsBetPlaced(false);
+      }
+      if (parsedData.type === "ROUND_START") {
+        setRoundStarted(true);
+        setRoundEnd(false);
+        // setIsBetPlaced(false);
       }
     };
 
     const handleBetPlaced = (e) => {
       const parsedData = JSON.parse(e);
+      console.log("Bet placed:", parsedData);
       setBetPlaced((prev) => [...prev, parsedData]);
     };
-
+    const handleBetCancel = (e) => {
+      const parsedData = JSON.parse(e);
+      setBetCaneledInfo((prev) => [...prev, parsedData]);
+      console.log("Bet cancelled:", parsedData);
+    };
     const handleCashoutPlaced = (e) => {
       console.log("Raw cashout data:", e);
       try {
@@ -93,6 +106,7 @@ export default function App() {
     socket.on("disconnect", handleDisconnect);
     socket.on("GAME_EVENTS", handleGameEvents);
     socket.on("BET_PLACED", handleBetPlaced);
+    socket.on("BET_CANCELED", handleBetCancel);
     socket.on("CASHOUT_PLACED", handleCashoutPlaced);
 
     return () => {
@@ -100,6 +114,7 @@ export default function App() {
       socket.off("disconnect", handleDisconnect);
       socket.off("GAME_EVENTS", handleGameEvents);
       socket.off("BET_PLACED", handleBetPlaced);
+      socket.off("BET_CANCELED", handleBetCancel);
       socket.off("CASHOUT_PLACED", handleCashoutPlaced);
     };
   }, [currentUser]);
@@ -124,10 +139,16 @@ export default function App() {
       position: 0,
       amount: amount,
     };
-    // console.log("Bet data:", betData);
-
-    socket.emit("BET", betData);
-    setUserBalance((prev) => prev - amount);
+    if (isBetPlaced) {
+      console.log("Cancelling bet:", betData);
+      socket.emit("BET_CANCEL", betData);
+      setIsBetPlaced(false);
+      // setBetCaneled(true);
+    } else {
+      socket.emit("BET", betData);
+      setUserBalance((prev) => prev - amount);
+      setIsBetPlaced(true);
+    }
   }
   function cashout() {
     if (!currentUser || !round) return alert("Missing user or round ID.");
@@ -165,19 +186,23 @@ export default function App() {
   }, [currentUser, users, setSearchParams]);
   const [isDisabled, setIsDisabled] = useState(false);
   function handleBetPlaced() {
-    setIsBetPlaced((prev) => !prev);
-
+    // setIsBetPlaced((prev) => !prev);
     placeBet();
   }
-  console.log(isBetPlaced);
   useEffect(() => {
     setUserToDisplay(searchParams.get("user"));
-    setUserBalance(searchParams.get("balance"));
+    setUserBalance(Number(searchParams.get("balance") || 0));
   }, [searchParams]);
-  console.log(cashoutPlaced);
   return (
     <>
       <div className="main">
+        <div className="multipliers">
+          <ul>
+            {gameEvents.map((event, index) => (
+              <li key={index}>{event.multiplier}</li>
+            ))}
+          </ul>
+        </div>
         <div className="game">
           {/* <ul> */}
           {/* {gameEvents.map((event, index) => (
@@ -190,75 +215,116 @@ export default function App() {
           {/* Multiplier : {multiplier} */}
           {/* </ul> */}
           <div id="pixi-container" style={{ width: "100", height: "100" }}>
-            <PixiGame roundEnd={roundEnd} multiplier={multiplier} />
+            <PixiGame
+              roundEnd={roundEnd}
+              multiplier={multiplier}
+              countdown={countdown}
+              round={round}
+              gameEvents={gameEvents}
+              isBetPlaced={isBetPlaced}
+              betAmount={betAmount}
+              currentUser={currentUser}
+              userBalance={userBalance}
+              betPlaced={betPlaced}
+              cashoutPlaced={cashoutPlaced}
+              currentBet={currentBet}
+              roundStarted={roundStarted}
+              multiplierCount={multiplierCount}
+              betCaneled={betCaneled}
+              betCaneledInfo={betCaneledInfo}
+              users={users}
+            />
           </div>
           {countdown ? (
             <h1>round starts in {countdown}</h1>
           ) : (
             // <h1 style={{ color: roundEnd ? "red" : "black" }}>
-            <h1>
+            <h1 style={{ color: roundEnd ? "red" : "black" }}>
               {multiplier}
               {multiplier ? "x" : ""}
             </h1>
           )}
-          <div className="bet_cont">
+        </div>
+        <div className="bet_cont">
+          {/* <input onChange={(e) => setBetAmount(e.target.value)} type="number" /> */}
+          <div className="input_stack">
             <input
               onChange={(e) => setBetAmount(e.target.value)}
               type="number"
+              value={betAmount || ""}
             />
+            <div className="quick-bet-buttons">
+              <button type="button" onClick={() => setBetAmount(100)}>
+                100
+              </button>
+              <button type="button" onClick={() => setBetAmount(500)}>
+                200
+              </button>
+              <button type="button" onClick={() => setBetAmount(5000)}>
+                500
+              </button>
+              <button type="button" onClick={() => setBetAmount(10000)}>
+                1000
+              </button>
+            </div>
+          </div>
+          <div className="bet_button_container">
             <button
-              disabled={isBetPlaced || !countdown ? true : false}
+              style={{ backgroundColor: isBetPlaced ? "red" : "green" }}
+              className="bet_button"
+              // disabled={isBetPlaced || !countdown ? true : false}
               onClick={handleBetPlaced}>
-              {isBetPlaced ? "cancel" : "Place Bet"}
+              {isBetPlaced ? "cancel" : `Bet  ${betAmount ? betAmount : ""}`}
               {/* cancel ჯერ არ დამიმატებია */}
             </button>
-            {/* {currentUserBalance ? `your balance ${currentUserBalance}` : ""} */}
           </div>
-          <select
-            value={currentUser || ""}
-            onChange={(e) => setCurrentUser(e.target.value)}>
-            {users.map((user) => {
-              return (
-                <option key={user.id} value={user.id}>
-                  user:{user.id}
-                </option>
-              );
-            })}
-          </select>
-          {betPlaced.length > 0 && (
-            <div className="bet_placed">
-              <h2>Bet History</h2>
-              {console.log("betPlaced:", betPlaced)}
-              {betPlaced.map((bet, i) => (
-                <ul key={i}>
-                  <li>
-                    User: {bet.user_id} | Amount: {bet.amount} | Position:{" "}
-                    {bet.position} || Bet Id: {bet.bet_id}
-                  </li>
-                </ul>
-              ))}
-            </div>
-          )}
-          {userToDisplay && (
-            <div className="user_info">
-              current user : {userToDisplay} | balance: {userBalance}
-              <button onClick={cashout}>Cash out</button>
-              {cashoutPlaced.length > 0 && (
-                <div className="cashout_history">
-                  <h2>Cashout History:</h2>
-                  {cashoutPlaced.map((cashout, i) => (
-                    <ul key={i}>
-                      <li>
-                        User: {cashout.user_id} | Amount: {cashout.amount} |
-                        Position: {cashout.position}
-                      </li>
-                    </ul>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          {/* {currentUserBalance ? `your balance ${currentUserBalance}` : ""} */}
         </div>
+
+        {/* <select
+          value={currentUser || ""}
+          onChange={(e) => setCurrentUser(e.target.value)}>
+          {users.map((user) => {
+            return (
+              <option key={user.id} value={user.id}>
+                user:{user.id}
+              </option>
+            );
+          })}
+        </select>
+        {betPlaced.length > 0 && (
+          <div className="bet_placed">
+            <h2>Bet History</h2>
+            {console.log("betPlaced:", betPlaced)}
+            {betPlaced.map((bet, i) => (
+              <ul key={i}>
+                <li>
+                  User: {bet.user_id} | Amount: {bet.amount} | Position:{" "}
+                  {bet.position} || Bet Id: {bet.bet_id}
+                </li>
+              </ul>
+            ))}
+          </div>
+        )}
+        {userToDisplay && (
+          <div className="user_info">
+            current user : {userToDisplay} | balance: {userBalance}
+            <button onClick={cashout}>Cash out</button>
+            {cashoutPlaced.length > 0 && (
+              <div className="cashout_history">
+                <h2>Cashout History:</h2>
+                {cashoutPlaced.map((cashout, i) => (
+                  <ul key={i}>
+                    <li>
+                      User: {cashout.user_id} | Amount: {cashout.amount} |
+                      Position: {cashout.position}
+                    </li>
+                  </ul>
+                ))}
+              </div>
+            )}
+          </div>
+        )} */}
       </div>
     </>
   );

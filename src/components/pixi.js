@@ -1,4 +1,4 @@
-import { Application, Assets, Sprite } from "pixi.js";
+import { Application, Assets, Sprite, Text } from "pixi.js";
 import { useRef, useEffect } from "react";
 
 export default function PixiGame(data) {
@@ -6,7 +6,7 @@ export default function PixiGame(data) {
   const birdRef = useRef(null);
   const tickerFnRef = useRef(null);
   const isInitializedRef = useRef(false);
-
+  const multiplierTextRef = useRef(null);
   // Initialize PIXI app once when component mounts
   useEffect(() => {
     if (isInitializedRef.current) return;
@@ -17,24 +17,42 @@ export default function PixiGame(data) {
       try {
         const app = new Application();
         await app.init({
-          background: "#1099bb",
           width: window.innerWidth / 2,
           height: window.innerHeight / 2,
+          backgroundColor: 0x000000,
+          transparent: true,
         });
 
         if (!isMounted) {
           app.destroy(true, true);
           return;
         }
+        const backgroundTexture = await Assets.load("/backgroundimg.png");
+        const background = new Sprite(backgroundTexture);
 
-        const texture = await Assets.load("/bird.png");
-        const bird = new Sprite(texture);
-        bird.anchor.set(0.5);
-        bird.x = app.screen.width / 2;
-        bird.y = 0;
-        birdRef.current = bird;
+        const multiplierText = new Text({
+          text: data?.multiplier?.toString() || "0",
+          style: {
+            fill: "#ffffff",
+            fontSize: 32,
+          },
+        });
+        multiplierText.x = app.screen.width / 2;
+        multiplierText.y = app.screen.height / 2 - 10;
+        multiplierText.anchor.set(0.5);
+        app.stage.addChild(multiplierText);
+        multiplierTextRef.current = multiplierText;
+        background.width = app.screen.width;
+        background.height = app.screen.height;
+        app.stage.addChild(background);
+        // const texture = await Assets.load("/bird.png");
+        // const bird = new Sprite(texture);
+        // bird.anchor.set(0.5);
+        // bird.x = app.screen.width / 2;
+        // bird.y = 0;
+        // birdRef.current = bird;
 
-        app.stage.addChild(bird);
+        // app.stage.addChild(bird);
 
         const container = document.getElementById("pixi-container");
         if (container && isMounted) {
@@ -71,11 +89,14 @@ export default function PixiGame(data) {
   }, []);
 
   useEffect(() => {
-    if (!appRef.current || !birdRef.current) return;
+    if (!appRef.current || !birdRef.current || !multiplierTextRef.current)
+      return;
 
     const app = appRef.current;
     const bird = birdRef.current;
+    const multiplierText = multiplierTextRef.current;
     console.log(data);
+    multiplierText.text = data?.multiplier?.toString() || "0";
     const tickerFn = (delta) => {
       if (data?.multiplier) {
         // Update bird position based on multiplier
