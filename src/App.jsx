@@ -18,9 +18,11 @@ export default function App() {
   const [isBetPlaced, setIsBetPlaced] = useState(false);
   const [cashoutPlaced, setCashoutPlaced] = useState([]);
   const [betCaneled, setBetCaneled] = useState(false);
-  const [betCaneledInfo, setBetCaneledInfo] = useState(null);
+  const [betCaneledInfo, setBetCaneledInfo] = useState([]);
+  const [lastMultiplier, setLastMultiplier] = useState([]);
   const [roundEnd, setRoundEnd] = useState(false);
   const [multiplierCount, setMultiplierCount] = useState(0);
+  const [lastMultiplierForPixi, setLastMultiplierForPixi] = useState(0);
   // const [roundEnd, setRoundEnd] = useState();
   const [betPlaced, setBetPlaced] = useState([]);
   const params = useParams();
@@ -69,6 +71,9 @@ export default function App() {
         setRoundEnd(true);
         setRoundStarted(false);
         setIsBetPlaced(false);
+        setLastMultiplier((prev) => [...prev, parsedData.multiplier]);
+        setLastMultiplierForPixi(parsedData.multiplier);
+        console.log("Round ended:", parsedData);
       }
       if (parsedData.type === "ROUND_START") {
         setRoundStarted(true);
@@ -124,10 +129,10 @@ export default function App() {
       alert("Please enter a valid bet amount.");
       return;
     }
-    // setSearchParams({
-    //   user: currentUser,
-    //   balance: userBalance - amount,
-    // });
+    setSearchParams({
+      user: currentUser,
+      balance: userBalance - amount,
+    });
     if (!currentUser || !round) {
       alert("Missing user or round ID.");
       console.error("placeBet() → missing:", { currentUser, round });
@@ -139,9 +144,10 @@ export default function App() {
       position: 0,
       amount: amount,
     };
-    if (isBetPlaced) {
-      console.log("Cancelling bet:", betData);
-      socket.emit("BET_CANCEL", betData);
+    if (isBetPlaced && roundStarted) {
+      // console.log("Cancelling bet:", betData);
+      // socket.emit("BET_CANCEL", betData);
+      cashout();
       setIsBetPlaced(false);
       // setBetCaneled(true);
     } else {
@@ -185,21 +191,19 @@ export default function App() {
     fetchBalance();
   }, [currentUser, users, setSearchParams]);
   const [isDisabled, setIsDisabled] = useState(false);
-  function handleBetPlaced() {
-    // setIsBetPlaced((prev) => !prev);
-    placeBet();
-  }
+
   useEffect(() => {
     setUserToDisplay(searchParams.get("user"));
     setUserBalance(Number(searchParams.get("balance") || 0));
   }, [searchParams]);
+  console.log(lastMultiplier);
   return (
     <>
       <div className="main">
         <div className="multipliers">
           <ul>
-            {gameEvents.map((event, index) => (
-              <li key={index}>{event.multiplier}</li>
+            {lastMultiplier.map((lastMult, index) => (
+              <li key={index}>{lastMult}</li>
             ))}
           </ul>
         </div>
@@ -220,6 +224,7 @@ export default function App() {
               multiplier={multiplier}
               countdown={countdown}
               round={round}
+              lastMultiplierForPixi={lastMultiplierForPixi}
               gameEvents={gameEvents}
               isBetPlaced={isBetPlaced}
               betAmount={betAmount}
@@ -235,15 +240,7 @@ export default function App() {
               users={users}
             />
           </div>
-          {countdown ? (
-            <h1>round starts in {countdown}</h1>
-          ) : (
-            // <h1 style={{ color: roundEnd ? "red" : "black" }}>
-            <h1 style={{ color: roundEnd ? "red" : "black" }}>
-              {multiplier}
-              {multiplier ? "x" : ""}
-            </h1>
-          )}
+          {countdown > 0 && <h1>round starts in {countdown}</h1>}
         </div>
         <div className="bet_cont">
           {/* <input onChange={(e) => setBetAmount(e.target.value)} type="number" /> */}
@@ -273,15 +270,21 @@ export default function App() {
               style={{ backgroundColor: isBetPlaced ? "red" : "green" }}
               className="bet_button"
               // disabled={isBetPlaced || !countdown ? true : false}
-              onClick={handleBetPlaced}>
-              {isBetPlaced ? "cancel" : `Bet  ${betAmount ? betAmount : ""}`}
+              onClick={placeBet}>
+              {isBetPlaced
+                ? !roundStarted
+                  ? "cancel"
+                  : `cashout ${
+                      betAmount * multiplier ? betAmount * multiplier : ""
+                    }`
+                : `Bet  ${betAmount ? betAmount : ""}`}
+
               {/* cancel ჯერ არ დამიმატებია */}
             </button>
           </div>
           {/* {currentUserBalance ? `your balance ${currentUserBalance}` : ""} */}
         </div>
-
-        {/* <select
+        <select
           value={currentUser || ""}
           onChange={(e) => setCurrentUser(e.target.value)}>
           {users.map((user) => {
@@ -324,7 +327,7 @@ export default function App() {
               </div>
             )}
           </div>
-        )} */}
+        )}
       </div>
     </>
   );

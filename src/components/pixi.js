@@ -1,6 +1,13 @@
-import { Application, Assets, Sprite, Text } from "pixi.js";
+import {
+  Application,
+  Assets,
+  Container,
+  Graphics,
+  Sprite,
+  Text,
+} from "pixi.js";
 import { useRef, useEffect } from "react";
-
+import { gsap } from "gsap";
 export default function PixiGame(data) {
   const appRef = useRef(null);
   const airplaneRef = useRef(null);
@@ -37,10 +44,14 @@ export default function PixiGame(data) {
         airplane.x = 0;
         airplane.y = app.screen.height - airplane.height / 2;
         const multiplierText = new Text({
-          text: data?.multiplier?.toString() || "0",
+          text:
+            data?.multiplier?.toString() ||
+            data?.lastMultiplier?.toString() ||
+            "0",
+          fontFamily: "Arial",
           style: {
             fill: "#ffffff",
-            fontSize: 32,
+            fontSize: 50,
           },
         });
         multiplierText.x = app.screen.width / 2;
@@ -61,6 +72,12 @@ export default function PixiGame(data) {
         }
         background.x = app.screen.width / 2;
         background.y = app.screen.height / 2;
+
+        const airplaneContainer = new Container();
+
+        airplaneContainer.addChild(airplane);
+        app.stage.addChild(airplaneContainer);
+
         // const texture = await Assets.load("/bird.png");
         // const bird = new Sprite(texture);
         // bird.anchor.set(0.5);
@@ -105,35 +122,65 @@ export default function PixiGame(data) {
   }, []);
 
   useEffect(() => {
-    if (!appRef.current || !multiplierTextRef.current) return;
+    if (!multiplierTextRef.current) return;
+
+    const multiplierText = multiplierTextRef.current;
+    multiplierText.text = data?.multiplier?.toString() || "";
+    multiplierText.style.fill =
+      data?.multiplier === data?.lastMultiplierForPixi ? "#ff0000" : "#ffffff";
+  }, [data?.multiplier]);
+
+  useEffect(() => {
+    if (!appRef.current || !airplaneRef.current) return;
 
     const app = appRef.current;
-    const multiplierText = multiplierTextRef.current;
     const airplane = airplaneRef.current;
-    console.log("Updating text with data:", data);
-    multiplierText.text = data?.multiplier?.toString() || "0";
 
+    // Clean up existing ticker
     if (tickerFnRef.current) {
       app.ticker.remove(tickerFnRef.current);
       tickerFnRef.current = null;
     }
 
-    if (airplaneRef.current && data?.multiplier !== undefined) {
-      const tickerFn = (delta) => {
-        airplane.x += 0.4 * data.multiplier * delta.deltaTime;
-        airplane.y -= 0.4 * data.multiplier * delta.deltaTime;
+    // Kill any existing animations
+    // gsap.killTweensOf(airplane);
+    if (!data?.multiplier) {
+      gsap.killTweensOf(airplane);
+      airplane.x = 0;
+      airplane.y = app.screen.height - airplane.height / 2;
+      return;
+    }
+    if (data?.roundEnd === true) {
+      // console.log("Flight finished (round over or crashed)");
+      gsap.to(airplane, {
+        x: app.screen.width * 2,
+        y: airplane.y,
+        duration: 4,
+        ease: "power1.out",
+        // onComplete: () => {
+        //   airplane.x = 0;
+        //   airplane.y = app.screen.height - airplane.height / 2;
+        //   return;
+        // },
+      });
+    } else {
+      gsap.to(airplane, {
+        x: app.screen.width - 200,
+        y: 100,
+        duration: 2,
+        ease: "linear",
 
-        if (airplane.y > app.screen.height + airplane.height) {
-          airplane.y = -airplane.height;
-        }
-      };
-
-      app.ticker.add(tickerFn);
-      tickerFnRef.current = tickerFn;
-      if (data?.roundEnd === true) {
-        app.ticker.remove(tickerFn);
-        tickerFnRef.current = null;
-      }
+        onUpdate: () => {
+          if (airplane.x >= app.screen.width - 300) {
+            gsap.to(airplane, {
+              x: app.screen.width - 200,
+              y: 100 - Math.sin(Date.now() / 500) * 50,
+              duration: 1,
+              ease: "linear",
+            });
+          }
+        },
+      });
     }
 
     return () => {
@@ -141,7 +188,11 @@ export default function PixiGame(data) {
         appRef.current.ticker.remove(tickerFnRef.current);
         tickerFnRef.current = null;
       }
+      // Clean up animations on unmount
+      if (airplane) {
+        gsap.killTweensOf(airplane);
+      }
     };
-  }, [data?.multiplier]);
+  }, [data?.roundEnd, data?.multiplier]);
   return null;
 }
