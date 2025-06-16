@@ -23,6 +23,7 @@ export default function App() {
   const [roundEnd, setRoundEnd] = useState(false);
   const [multiplierCount, setMultiplierCount] = useState(0);
   const [lastMultiplierForPixi, setLastMultiplierForPixi] = useState(0);
+  const [gameType, setGameType] = useState("bet");
   // const [roundEnd, setRoundEnd] = useState();
   const [betPlaced, setBetPlaced] = useState([]);
   const params = useParams();
@@ -35,6 +36,8 @@ export default function App() {
     () => searchParams.get("balance") || 0
   );
   const [users, setUsers] = useState([]);
+  const [isAutoCashout, setIsAutoCashout] = useState(false);
+  const [autoCashoutValue, setAutoCashoutValue] = useState(0);
   useEffect(() => {
     if (!socket) return;
 
@@ -129,15 +132,15 @@ export default function App() {
       alert("Please enter a valid bet amount.");
       return;
     }
-    setSearchParams({
-      user: currentUser,
-      balance: userBalance - amount,
-    });
     if (!currentUser || !round) {
       alert("Missing user or round ID.");
       console.error("placeBet() → missing:", { currentUser, round });
       return;
     }
+    setSearchParams({
+      user: currentUser,
+      balance: userBalance - amount,
+    });
     const betData = {
       user_id: currentUser,
       round_id: round,
@@ -176,7 +179,7 @@ export default function App() {
         const balances = await resp.json();
         const userBalance = balances.find((b) => b.userId === currentUser);
         // console.log(userBalance);
-        if (userBalance) {
+        if (userBalance && currentUser) {
           setCurrentUserBalance(userBalance.totalBalance);
           setSearchParams({
             user: currentUser,
@@ -197,6 +200,21 @@ export default function App() {
     setUserBalance(Number(searchParams.get("balance") || 0));
   }, [searchParams]);
   console.log(lastMultiplier);
+  useEffect(() => {
+    console.log("Multiplier:", multiplier);
+    console.log("isBetPlaced:", isBetPlaced);
+    console.log("isAutoCashout:", isAutoCashout);
+    if (isBetPlaced && isAutoCashout && autoCashoutValue > 0) {
+      if (multiplier >= autoCashoutValue) {
+        console.log("making auto cashout at multiplier:", multiplier);
+        cashout();
+        console.log(
+          `Auto cashout triggered at multiplier ${multiplier} for user ${currentUser}`
+        );
+        setIsBetPlaced(false);
+      }
+    }
+  }, [multiplier, isBetPlaced, isAutoCashout]);
   return (
     <>
       <div className="main">
@@ -244,6 +262,18 @@ export default function App() {
         </div>
         <div className="bet_cont">
           {/* <input onChange={(e) => setBetAmount(e.target.value)} type="number" /> */}
+          <div className="switcher-buttons">
+            <button
+              style={{ background: gameType === "Bet" ? "white" : "" }}
+              onClick={() => setGameType("Bet")}>
+              Bet
+            </button>
+            <button
+              style={{ background: gameType === "Auto" ? "white" : "" }}
+              onClick={() => setGameType("Auto")}>
+              Auto
+            </button>
+          </div>
           <div className="input_stack">
             <input
               onChange={(e) => setBetAmount(e.target.value)}
@@ -264,6 +294,29 @@ export default function App() {
                 1000
               </button>
             </div>
+            {gameType === "Auto" && (
+              <>
+                <p style={{ color: "white" }}>Auto Cash out</p>
+                <label class="switch">
+                  <input
+                    type="checkbox"
+                    onChange={() => setIsAutoCashout((prev) => !prev)}
+                    id="autoBet"
+                    name="autoBet"
+                  />
+                  <span className="slider"></span>
+                </label>
+
+                {isAutoCashout ? (
+                  <input
+                    type="number"
+                    onChange={(e) => setAutoCashoutValue(e.target.value)}
+                  />
+                ) : (
+                  ""
+                )}
+              </>
+            )}
           </div>
           <div className="bet_button_container">
             <button

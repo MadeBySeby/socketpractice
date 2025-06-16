@@ -60,7 +60,8 @@ h1 {
 }
 .bet_cont {
   /* width: 500px; */
-  display: grid;
+  display: flex;
+  flex-direction: column;
   grid-template-columns: 1fr auto;
   align-items: stretch;
   gap: 1rem;
@@ -91,6 +92,7 @@ h1 {
 }
 .bet_button {
   height: 100%;
+  width: 100%;
   padding: 1rem;
   background-color: green;
   border: 1px solid white;
@@ -221,6 +223,85 @@ select:focus {
   align-items: center;
   gap: 1.2rem;
 }
+.switcher-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 0.5rem;
+  background: #222;
+  border-radius: 0.7rem;
+  padding: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.bet_cont .switcher-buttons button {
+  background: none;
+  border: none;
+  color: black;
+  padding: 0.7rem 1.3rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.bet_cont .switcher-buttons button.active,
+.bet_cont .switcher-buttons button:focus {
+  background: #fffde7;
+  color: #222;
+  font-weight: bold;
+  outline: none;
+}
+
+.bet_cont .switcher-buttons button:hover:not(.active) {
+  background: #333;
+  color: #fffde7;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 26px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #4caf50;
+}
+
+input:checked + .slider::before {
+  transform: translateX(24px);
+}
+
 #pixi-container {
 }
 @media (max-width: 600px) {
